@@ -1,0 +1,6 @@
+opencv-python
+pytesseract
+google-genai
+google-generativeai
+pillow
+numpy

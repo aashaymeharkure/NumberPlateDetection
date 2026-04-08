@@ -1,0 +1,14 @@
+bin/
+.vscode/
+*.class
+Img/snapshot_*.png
+fastDatabase/violations.dat
+fastDatabase/detections.csv
+compile-project.ps1
+run-trafficenforce.ps1
+.venv/
+Extract_AI/venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

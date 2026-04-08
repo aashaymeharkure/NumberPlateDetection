@@ -4,9 +4,17 @@ import java.util.Optional;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import javafx.util.Pair;
 
@@ -24,6 +32,13 @@ public class index extends Application {
         showPublicSearchView();
 
         Scene scene = new Scene(root, 1280, 800);
+        
+        // GLOBAL DEBUG FILTER: Identify what is being clicked
+        scene.addEventFilter(MouseEvent.MOUSE_PRESSED, e -> {
+            System.out.println("DEBUG: Mouse Pressed at X=" + e.getSceneX() + ", Y=" + e.getSceneY() + 
+                               " | Target: " + e.getTarget() + " | Type: " + e.getEventType());
+        });
+
         String cssPath = "/styles.css";
         try {
              scene.getStylesheets().add(getClass().getResource(cssPath).toExternalForm());
@@ -39,22 +54,50 @@ public class index extends Application {
         primaryStage.show();
     }
 
-    public void showLoginDialog() {
-        LoginDialog loginDialog = new LoginDialog(primaryStage);
-        Optional<Pair<String, String>> result = loginDialog.showDialogAndWait();
+    private boolean isAdminLoggedIn = false;
 
-        result.ifPresent(credentials -> {
-            if ("adminJava".equals(credentials.getKey()) && "123".equals(credentials.getValue())) {
-                showAdminDashboard();
-            } else {
-                showAlert("Login Failed", "Invalid username or password.");
+    public void showLoginDialog() {
+        System.out.println("DEBUG: Entering showLoginDialog()");
+        if (isAdminLoggedIn) {
+            System.out.println("DEBUG: Admin already logged in, showing dashboard.");
+            showAdminDashboard();
+            return;
+        }
+
+        try {
+            LoginDialog loginDialog = new LoginDialog(primaryStage);
+            System.out.println("DEBUG: LoginDialog instance created.");
+            Optional<Pair<String, String>> result = loginDialog.showDialogAndWait();
+
+            result.ifPresent(credentials -> {
+                System.out.println("DEBUG: Credentials received.");
+                if ("adminJava".equals(credentials.getKey()) && "123".equals(credentials.getValue())) {
+                    isAdminLoggedIn = true;
+                    System.out.println("DEBUG: Login successful. Showing Admin Dashboard.");
+                    showAdminDashboard();
+                } else {
+                    System.out.println("DEBUG: Login failed. Invalid credentials.");
+                    showAlert("Login Failed", "Invalid username or password.");
+                }
+            });
+            if (result.isEmpty()) {
+                System.out.println("DEBUG: Login dialog dismissed without result.");
             }
-        });
+        } catch (Exception e) {
+            System.err.println("ERROR: Exception while showing LoginDialog: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void logout() {
+        isAdminLoggedIn = false;
+        showPublicSearchView();
     }
 
     private void showAdminDashboard() {
         Sidebar sidebar = new Sidebar(this);
         root.setLeft(sidebar.getView());
+        root.setTop(null); // Sidebar has its own logo/header
         showAllViolations();
     }
 
@@ -71,7 +114,31 @@ public class index extends Application {
     public void showPublicSearchView() {
         PublicSearchView publicSearchView = new PublicSearchView(this::showLoginDialog, dataService);
         root.setLeft(null);
+        root.setTop(createFixedHeader()); // ADD FIXED HEADER TO TOP
         root.setCenter(publicSearchView.getView());
+    }
+
+    private HBox createFixedHeader() {
+        HBox header = new HBox();
+        header.setPadding(new Insets(20, 60, 20, 60));
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.getStyleClass().add("top-nav");
+
+        Label logo = new Label("TrafficEnforce");
+        logo.getStyleClass().add("public-view-logo");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button adminPortalButton = new Button("Admin Portal");
+        adminPortalButton.getStyleClass().add("primary-button");
+        adminPortalButton.setOnAction(e -> {
+            System.out.println("DEBUG: Admin Portal button CLICKED from FIXED HEADER!");
+            showLoginDialog();
+        });
+
+        header.getChildren().addAll(logo, spacer, adminPortalButton);
+        return header;
     }
 
     private void showAlert(String title, String message) {

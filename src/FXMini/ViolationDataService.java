@@ -19,6 +19,9 @@ public class ViolationDataService {
 
     private static final String DATA_FILE_PATH =
             DATA_DIRECTORY_PATH + File.separator + "violations.dat";
+            
+    private static final String DETECTION_CSV_PATH =
+            DATA_DIRECTORY_PATH + File.separator + "detections.csv";
 
     private ObservableList<Violation> violations;
 
@@ -98,6 +101,16 @@ public class ViolationDataService {
         saveDataToFile();
     }
 
+    public void deleteViolation(Violation violation) {
+        violations.remove(violation);
+        saveDataToFile();
+    }
+
+    public void deleteAllViolations() {
+        violations.clear();
+        saveDataToFile();
+    }
+
     public void updateViolationStatus(String plate, String newStatus) {
         for (Violation v : violations) {
             if (v.getPlate().equals(plate)) {
@@ -106,6 +119,32 @@ public class ViolationDataService {
             }
         }
         saveDataToFile();
+    }
+
+    public void processPayment(Violation violation) {
+        // 1. Remove from in-memory list and violations.dat
+        violations.remove(violation);
+        saveDataToFile();
+        
+        // 2. Remove from detections.csv
+        removePlateFromCSV(violation.getPlate());
+    }
+
+    private void removePlateFromCSV(String plate) {
+        File csvFile = new File(DETECTION_CSV_PATH);
+        if (!csvFile.exists()) return;
+
+        try {
+            List<String> lines = java.nio.file.Files.readAllLines(csvFile.toPath());
+            List<String> filteredLines = lines.stream()
+                .filter(line -> !line.split(",")[0].trim().equalsIgnoreCase(plate.trim()))
+                .collect(Collectors.toList());
+            
+            java.nio.file.Files.write(csvFile.toPath(), filteredLines);
+            System.out.println("Removed plate " + plate + " from detections.csv");
+        } catch (IOException e) {
+            System.err.println("Error updating detections.csv: " + e.getMessage());
+        }
     }
 
     public ObservableList<Violation> searchByPlate(String plateNumber) {
