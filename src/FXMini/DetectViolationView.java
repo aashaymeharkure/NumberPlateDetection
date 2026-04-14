@@ -141,7 +141,7 @@ public class DetectViolationView {
                 while ((line = reader.readLine()) != null) {
                     System.out.println("Webcam output: " + line);
                     if (line.contains("DETECTED:")) {
-                        String plate = line.split("DETECTED:")[1].trim().split(" ")[0];
+                        String plate = line.split("DETECTED:")[1].trim().split(" at ")[0].trim();
                         long currentTime = System.currentTimeMillis();
                         
                         // Prevent duplicate adding of same plate within 5 seconds
